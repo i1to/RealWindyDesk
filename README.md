@@ -1,127 +1,65 @@
-# WindyWall
+# 中国气象网风流场实时动态壁纸
 
-Dynamic desktop wallpaper for Windows that visualizes real-time wind direction data from the China Meteorological Administration (CMA) or similar APIs.
+将中国气象网的实时风流场数据显示为桌面背景，让您随时了解风向和风速情况。
 
-## Project Status
+## 项目状态
 
-🚧 **Exploratory Phase**: This project is currently in the planning and research stage. I am searching for existing tools that provide dynamic wallpapers based on real-time wind direction data from CMA or comparable APIs. If no suitable projects are found, I will proceed with developing this visualization tool. Contributions, suggestions, or pointers to existing solutions are welcome!
+✅ **已实现**: 本项目已经实现了将中国气象网的实时风流场数据显示为桌面背景的功能。程序会自动加载中国气象网的风流场页面，并将其显示为桌面背景，定期刷新以保持数据的实时性。
 
-## Project Overview
+## 项目概述
 
-WindyWall aims to create a dynamic Windows desktop wallpaper that updates in real-time to display wind direction data for a user-specified location in China (or globally, if supported by the API). The wallpaper will feature a visually appealing representation of wind direction (e.g., animated arrows or streamlines) and may include additional weather metrics like wind speed.
+本项目创建了一个动态桌面背景，实时显示中国气象网的风流场数据。程序使用 PyQt5 的 WebEngine 直接加载中国气象网的风流场页面，保留了所有动画和交互效果，让您可以直观地了解全国各地的风向和风速情况。
 
-### Goals
+### 功能特点
 
-- **Fetch Data**: Retrieve real-time wind direction data using CMA’s API (if available) or alternatives like QWeather or OpenWeatherMap.
-- **Visualize**: Generate a dynamic wallpaper with wind direction visualizations (e.g., arrows, particle animations, or wind contours).
-- **Automate**: Update the wallpaper periodically (e.g., every 10 minutes) to reflect the latest data.
-- **Customize**: Allow users to configure location, visualization style, and update frequency.
+- **实时数据**: 直接从中国气象网获取最新的风流场数据
+- **动态显示**: 保留原网页的动画效果，实时显示风向和风速变化
+- **自动更新**: 定期刷新页面，确保数据始终保持最新
+- **无缝集成**: 作为桌面背景显示，不影响桌面图标和其他应用程序
+- **简单控制**: 使用键盘快捷键控制程序（ESC退出，F5刷新，F1显示/隐藏状态）
 
-### Potential Features
+### 技术实现
 
-- Wind direction arrows or particle-based animations.
-- Support for multiple cities or regions.
-- Configurable background colors and visualization styles.
-- Optional display of wind speed, temperature, or other weather data.
-- Lightweight and efficient to minimize system resource usage.
+本项目使用以下技术实现：
 
-## Research Plan
+- **PyQt5**: 创建桌面应用程序
+- **PyQtWebEngine**: 加载和显示网页内容
+- **JavaScript**: 自动处理网页，点击风流场选项并隐藏不需要的元素
+- **Python**: 实现程序逻辑和控制流程
 
-Before development begins, I will:
+## 使用方法
 
-1. Search GitHub, Google, and other platforms for existing projects that:
-   - Create dynamic wallpapers using real-time wind direction data.
-   - Integrate with CMA or similar meteorological APIs.
-2. Evaluate CMA’s API availability and documentation. If unavailable, explore alternatives like:
-   - [QWeather](https://dev.qweather.com/) (supports CMA data).
-   - [OpenWeatherMap](https://openweathermap.org/).
-   - [MeteoSwiss](https://www.meteoswiss.admin.ch/) or other open-data sources.
-3. If no existing tools meet the requirements, proceed with:
-   - Selecting a programming language (likely Python for its ecosystem).
-   - Designing the visualization approach (e.g., Pillow for static images, Pygame for animations).
-   - Planning Windows integration (e.g., using `ctypes` for wallpaper updates).
+1. 运行 `run_live_wallpaper.bat` 批处理文件
+2. 程序会自动安装必要的依赖项（PyQt5、PyQtWebEngine）
+3. 程序启动后，会自动加载中国气象网的风流场页面
+4. 页面加载完成后，程序会自动点击风流场选项，并隐藏不需要的元素
+5. 程序会定期刷新页面，确保显示最新的数据
 
-**Current Findings**:
+### 控制方式
 
-- [daspartho/dynamic-wallpaper](https://github.com/daspartho/dynamic-wallpaper): Changes wallpapers based on weather conditions using OpenWeatherMap and Unsplash APIs, but does not focus on wind direction or CMA data.[](https://github.com/daspartho/dynamic-wallpaper)
-- [pgaskin/windy](https://github.com/pgaskin/windy): An Android live wallpaper visualizing wind patterns from NOAA GFS data, not Windows-compatible or CMA-specific.[](https://github.com/pgaskin/windy)
-- No projects found yet that specifically use CMA wind data for Windows dynamic wallpapers.
+- 按 `ESC` 键退出程序
+- 按 `F5` 键刷新页面
+- 按 `F1` 键显示/隐藏状态标签
 
-**Next Steps**:
+## 系统要求
 
-- Confirm CMA API access or select an alternative.
-- Update this README with research outcomes and development plans.
+- Windows 10/11
+- Python 3.6+
+- 网络连接（用于访问中国气象网）
 
-## Getting Started
+## 文件结构
 
-This project is not yet in active development. If you’re interested in contributing or have information about existing solutions, please:
+- `run_live_wallpaper.bat`: 主运行文件，用于启动程序
+- `src/wind_flow_live_wallpaper.py`: 主程序文件，实现了风流场实时动态壁纸的功能
+- `src/assets/icon.png`: 程序图标
+- `src/scripts/`: 包含其他辅助脚本和批处理文件
 
-- Check the [Issues](https://github.com/your-username/windywall/issues) section for discussions or to share findings.
-- Open a new issue to suggest APIs, visualization ideas, or related projects.
+## 注意事项
 
-### Prerequisites (Planned)
+- 程序需要连接到中国气象网才能获取实时数据
+- 首次加载可能需要一些时间，请耐心等待
+- 如果遇到问题，可以查看 `wind_flow_live_wallpaper.log` 文件了解详细信息
 
-- Python 3.8+ (for development).
-- uv package manager for Python dependencies.
-- API key for CMA, QWeather, or another weather service.
-- Windows 10/11 (for wallpaper integration).
+## 许可证
 
-### Installation (To Be Added)
-
-Once development begins, installation instructions will include:
-
-1. Cloning the repository.
-2. Installing dependencies (`requests`, `Pillow`, etc.).
-3. Configuring API keys and location settings.
-
-## Usage (To Be Added)
-
-Example usage will be provided, such as:
-
-```bash
-python windywall.py --location "Beijing" --api-key "your-api-key"
-```
-
-This will generate and set a dynamic wallpaper showing Beijing’s real-time wind direction.
-
-## Contributing
-
-Contributions are welcome, especially during this exploratory phase! You can help by:
-
-- Sharing links to existing projects or APIs.
-- Suggesting visualization techniques or libraries.
-- Providing feedback on the project’s direction.
-
-To contribute:
-
-1. Fork the repository.
-2. Create a branch (`git checkout -b feature/idea`).
-3. Commit changes (`git commit -m "Add suggestion for X"`).
-4. Push to the branch (`git push origin feature/idea`).
-5. Open a Pull Request.
-
-Please follow the [Code of Conduct](CODE_OF_CONDUCT.md) (to be added).
-
-## Roadmap
-
-- [x] Research existing projects and APIs.
-- [ ] Confirm API selection and access.
-- [ ] Define visualization design (static vs. animated).
-- [ ] Develop initial prototype.
-- [ ] Add user configuration options.
-- [ ] Optimize performance and release v1.0.
-
-## License
-
-This project will be licensed under the [MIT License](LICENSE) (to be added upon development start).
-
-## Contact
-
-- **Maintainer**: [Your GitHub Username](https://github.com/your-username)
-- **Issues**: [github.com/your-username/windywall/issues](https://github.com/your-username/windywall/issues)
-- **Email**: (Optional, add your contact email)
-
-## Acknowledgments
-
-- Inspired by projects like [daspartho/dynamic-wallpaper](https://github.com/daspartho/dynamic-wallpaper) and [pgaskin/windy](https://github.com/pgaskin/windy).[](https://github.com/daspartho/dynamic-wallpaper)[](https://github.com/pgaskin/windy)
-- Thanks to the open-source community for sharing weather visualization tools and APIs.
+本项目采用 MIT 许可证。
