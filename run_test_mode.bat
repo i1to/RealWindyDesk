@@ -1,5 +1,4 @@
 @echo off
-chcp 65001 > nul
 title China Weather Wind Flow Live Wallpaper - Test Mode
 color 0A
 
@@ -17,7 +16,7 @@ echo.
 echo =====================================================
 echo.
 
-REM 检查Python是否已安装
+REM Check if Python is installed
 python --version > nul 2>&1
 if %errorlevel% neq 0 (
     color 0C
@@ -40,10 +39,10 @@ echo.
 echo Starting the application in test mode...
 echo.
 
-REM 创建必要的目录
+REM Create necessary directories
 if not exist src\assets mkdir src\assets
 
-REM 运行应用程序（测试模式）
+REM Run the application in test mode
 python src/wind_flow_live_wallpaper.py --verbose --test
 
 echo.

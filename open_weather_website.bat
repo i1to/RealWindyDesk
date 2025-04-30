@@ -1,5 +1,4 @@
 @echo off
-chcp 65001 > nul
 title Open China Weather Website
 color 0A
 
