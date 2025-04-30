@@ -1,43 +1,44 @@
 @echo off
-echo 正在安装中国气象网实时风流场桌面壁纸程序...
+chcp 65001 > nul
+echo Installing China Weather Wind Flow Wallpaper Program...
 echo.
 
-REM 检查Python是否已安装
+REM Check if Python is installed
 python --version > nul 2>&1
 if %errorlevel% neq 0 (
-    echo 错误: 未检测到Python。请安装Python 3.6或更高版本。
-    echo 下载地址: https://www.python.org/downloads/
+    echo Error: Python not detected. Please install Python 3.6 or higher.
+    echo Download URL: https://www.python.org/downloads/
     pause
     exit /b 1
 )
 
-REM 安装依赖
-echo 正在安装Python依赖...
+REM Install dependencies
+echo Installing Python dependencies...
 pip install -r requirements.txt
 if %errorlevel% neq 0 (
-    echo 安装依赖失败。请检查网络连接或手动运行 'pip install -r requirements.txt'
+    echo Failed to install dependencies. Please check your network connection or run 'pip install -r requirements.txt' manually.
     pause
     exit /b 1
 )
 
 echo.
-echo 依赖安装完成！
+echo Dependencies installed successfully!
 echo.
 
-REM 检查ChromeDriver
+REM Check for ChromeDriver
 if not exist chromedriver.exe (
-    echo 警告: 未找到ChromeDriver (chromedriver.exe)
-    echo 请下载与您Chrome浏览器版本匹配的ChromeDriver，并将其放在程序目录下。
-    echo 下载地址: https://chromedriver.chromium.org/downloads
+    echo Warning: ChromeDriver (chromedriver.exe) not found.
+    echo Please download the ChromeDriver that matches your Chrome browser version and place it in the program directory.
+    echo Download URL: https://chromedriver.chromium.org/downloads
     echo.
 )
 
-echo 安装完成！
+echo Installation complete!
 echo.
-echo 使用方法:
-echo 1. 确保已下载ChromeDriver并放置在程序目录下
-echo 2. 运行 'python src/wind_wallpaper_new.py' 启动程序
+echo Usage:
+echo 1. Make sure you have downloaded ChromeDriver and placed it in the program directory
+echo 2. Run 'python src/wind_wallpaper_new.py' to start the program
 echo.
-echo 详细说明请参阅 USAGE_GUIDE.md 文件
+echo For detailed instructions, please refer to the USAGE_GUIDE.md file
 echo.
 pause
