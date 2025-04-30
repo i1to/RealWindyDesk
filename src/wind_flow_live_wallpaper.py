@@ -373,33 +373,33 @@ class WindFlowLiveWallpaper(QMainWindow):
                 return false;
             }
 
-            // 记录页面信息
-            var pageInfo = logPageInfo();
+            // 主函数
+            function main() {
+                // 记录页面信息
+                var pageInfo = logPageInfo();
 
-            // 执行操作
-            setTimeout(function() {
+                // 点击风流场选项
                 var clickResult = findAndClickWindFlowOption();
                 console.log('点击风流场选项结果:', clickResult);
 
-                // 等待风流场加载
-                setTimeout(function() {
-                    var hideResult = hideUnnecessaryElements();
-                    console.log('隐藏元素结果:', hideResult);
+                // 隐藏不需要的元素
+                var hideResult = hideUnnecessaryElements();
+                console.log('隐藏元素结果:', hideResult);
 
-                    // 再次记录页面信息
-                    var updatedPageInfo = logPageInfo();
+                // 再次记录页面信息
+                var updatedPageInfo = logPageInfo();
 
-                    return {
-                        clickResult: clickResult,
-                        hideResult: hideResult,
-                        initialPageInfo: pageInfo,
-                        updatedPageInfo: updatedPageInfo
-                    };
-                }, 3000);
-            }, 2000);
+                // 返回结果
+                return {
+                    clickResult: clickResult,
+                    hideResult: hideResult,
+                    initialPageInfo: pageInfo,
+                    updatedPageInfo: updatedPageInfo
+                };
+            }
 
-            // 返回成功
-            return true;
+            // 执行主函数
+            main();
             """
 
             # 执行JavaScript代码
@@ -513,15 +513,18 @@ class WindFlowLiveWallpaper(QMainWindow):
                     }
                 }
 
-                return {
+                var result = {
                     url: window.location.href,
                     title: document.title,
                     hasMapContainer: mapContainer !== null,
                     windElements: windElements.slice(0, 10)  // 只返回前10个元素
                 };
+
+                console.log('页面状态检查结果:', result);
+                return result;
             }
 
-            return checkPageStatus();
+            checkPageStatus();
             """
 
             self.web_view.page().runJavaScript(js_check, self.on_check_status)
