@@ -358,6 +358,7 @@ def fetch_wind_data():
 
 # 创建风流场壁纸
 def create_wind_wallpaper(timestamp, screenshot_path, _):
+    global WALLPAPER_PATH  # 声明全局变量，必须在函数开始时声明
     try:
         logger.info(f"开始创建风流场壁纸，使用截图: {screenshot_path}")
         print(f"正在打开截图: {screenshot_path}")
@@ -437,8 +438,6 @@ def create_wind_wallpaper(timestamp, screenshot_path, _):
             print(f"创建目录: {wallpaper_dir}")
 
         # 保存壁纸 (使用BMP格式，Windows壁纸更兼容)
-        global WALLPAPER_PATH  # 声明全局变量，必须在使用前声明
-
         bmp_path = WALLPAPER_PATH.replace('.png', '.bmp')
         try:
             wallpaper.save(bmp_path, "BMP")
@@ -474,6 +473,7 @@ def create_wind_wallpaper(timestamp, screenshot_path, _):
 
 # 设置Windows桌面壁纸
 def set_wallpaper():
+    global WALLPAPER_PATH  # 声明全局变量，必须在函数开始时声明
     try:
         logger.info("开始设置Windows桌面壁纸")
 
@@ -614,6 +614,7 @@ def set_wallpaper():
 
 # 主更新函数
 def update_wallpaper():
+    global WALLPAPER_PATH  # 声明全局变量，必须在函数开始时声明
     print("获取风流场数据...")
     timestamp, screenshot_path, _ = fetch_wind_data()
     if timestamp and screenshot_path:
