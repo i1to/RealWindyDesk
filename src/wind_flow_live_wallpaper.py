@@ -453,6 +453,9 @@ class WindFlowLiveWallpaper(QMainWindow):
             else:
                 logger.error("未能确定具体错误原因")
                 self.status_label.setText("错误: 页面加载失败，原因未知")
+        except Exception as e:
+            logger.error(f"分析错误页面时出错: {e}")
+            logger.error(traceback.format_exc())
 
     def on_js_executed(self, result):
         """JavaScript代码执行完成后的处理"""
