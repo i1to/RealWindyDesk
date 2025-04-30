@@ -1,0 +1,7 @@
+[project]
+name = "real-time-weather-visualisation-desktop"
+version = "0.1.0"
+description = "Dynamic desktop wallpaper for Windows that visualizes real-time wind direction data"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
