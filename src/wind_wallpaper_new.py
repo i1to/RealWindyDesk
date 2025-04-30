@@ -437,6 +437,8 @@ def create_wind_wallpaper(timestamp, screenshot_path, _):
             print(f"创建目录: {wallpaper_dir}")
 
         # 保存壁纸 (使用BMP格式，Windows壁纸更兼容)
+        global WALLPAPER_PATH  # 声明全局变量，必须在使用前声明
+
         bmp_path = WALLPAPER_PATH.replace('.png', '.bmp')
         try:
             wallpaper.save(bmp_path, "BMP")
@@ -458,7 +460,6 @@ def create_wind_wallpaper(timestamp, screenshot_path, _):
             # 继续执行，因为BMP格式已保存成功
 
         # 更新全局变量，使用BMP路径
-        global WALLPAPER_PATH
         old_path = WALLPAPER_PATH
         WALLPAPER_PATH = bmp_path
         logger.info(f"更新壁纸路径: {old_path} -> {WALLPAPER_PATH}")
@@ -652,11 +653,18 @@ def main():
     print(f"日志文件: {os.path.abspath(LOG_FILE)}")
     print("-"*50)
 
-    try:
-        input("第1步: 准备开始检查环境。按Enter键继续...")
-    except EOFError:
-        logger.warning("无法读取用户输入，可能是在非交互式环境中运行")
-        print("检测到非交互式环境，将自动继续执行...")
+    # 检查是否在非交互式模式下运行
+    non_interactive = os.environ.get('NON_INTERACTIVE', '0') == '1'
+    if non_interactive:
+        logger.info("检测到非交互式模式，将自动执行所有步骤")
+        print("检测到非交互式模式，将自动执行所有步骤...")
+    else:
+        try:
+            input("第1步: 准备开始检查环境。按Enter键继续...")
+        except EOFError:
+            logger.warning("无法读取用户输入，可能是在非交互式环境中运行")
+            print("检测到非交互式环境，将自动继续执行...")
+            non_interactive = True
 
     # 检查Chrome驱动是否存在
     logger.info("检查Chrome驱动...")
@@ -686,13 +694,23 @@ def main():
             break
 
     if not chrome_found:
+        logger.warning("未找到Chrome浏览器，程序可能无法正常运行")
         print("警告: 未找到Chrome浏览器，程序可能无法正常运行")
         print("请确保已安装Chrome浏览器")
-        response = input("是否继续? (y/n): ")
-        if response.lower() != 'y':
-            return
 
-    input("\n第2步: 准备测试壁纸设置功能。按Enter键继续...")
+        if non_interactive:
+            logger.info("非交互式模式，自动继续执行")
+            print("非交互式模式，自动继续执行...")
+        else:
+            response = input("是否继续? (y/n): ")
+            if response.lower() != 'y':
+                return
+
+    if non_interactive:
+        logger.info("非交互式模式，跳过用户确认")
+        print("\n第2步: 准备测试壁纸设置功能（自动继续）...")
+    else:
+        input("\n第2步: 准备测试壁纸设置功能。按Enter键继续...")
 
     # 检查是否能够设置壁纸
     print("\n正在测试壁纸设置功能...")
@@ -706,8 +724,8 @@ def main():
 
         # 尝试设置测试壁纸
         print("\n尝试设置测试壁纸...")
+        global WALLPAPER_PATH  # 声明全局变量，必须在使用前声明
         old_wallpaper_path = WALLPAPER_PATH
-        global WALLPAPER_PATH
         WALLPAPER_PATH = test_path
 
         wallpaper_set = False
@@ -771,13 +789,18 @@ def main():
         WALLPAPER_PATH = old_wallpaper_path
 
         # 询问用户壁纸是否已更改
-        response = input("\n您的桌面壁纸是否变成了蓝色? (y/n): ")
-        if response.lower() == 'y':
-            print("✓ 壁纸设置测试成功!")
+        if non_interactive:
+            logger.info("非交互式模式，假设壁纸设置成功")
+            print("\n非交互式模式，假设壁纸设置成功")
             wallpaper_set = True
         else:
-            print("✗ 壁纸设置测试失败")
-            wallpaper_set = False
+            response = input("\n您的桌面壁纸是否变成了蓝色? (y/n): ")
+            if response.lower() == 'y':
+                print("✓ 壁纸设置测试成功!")
+                wallpaper_set = True
+            else:
+                print("✗ 壁纸设置测试失败")
+                wallpaper_set = False
 
         # 清理测试文件
         try:
@@ -787,6 +810,7 @@ def main():
             print(f"警告: 无法删除测试图像: {e}")
 
         if not wallpaper_set:
+            logger.warning("所有壁纸设置方法都失败了")
             print("\n警告: 所有壁纸设置方法都失败了")
             print("可能的原因:")
             print("1. 程序没有足够的权限")
@@ -797,18 +821,31 @@ def main():
             print("- 检查系统策略设置")
             print("- 尝试手动更改壁纸以确认权限")
 
+            if non_interactive:
+                logger.info("非交互式模式，自动继续执行")
+                print("\n非交互式模式，自动继续执行...")
+            else:
+                response = input("\n是否继续运行程序? (y/n): ")
+                if response.lower() != 'y':
+                    return
+    except Exception as e:
+        logger.error(f"壁纸设置测试失败: {e}")
+        logger.error(traceback.format_exc())
+        print(f"\n壁纸设置测试失败: {e}")
+
+        if non_interactive:
+            logger.info("非交互式模式，自动继续执行")
+            print("\n非交互式模式，自动继续执行...")
+        else:
             response = input("\n是否继续运行程序? (y/n): ")
             if response.lower() != 'y':
                 return
-    except Exception as e:
-        print(f"\n壁纸设置测试失败: {e}")
-        import traceback
-        traceback.print_exc()
-        response = input("\n是否继续运行程序? (y/n): ")
-        if response.lower() != 'y':
-            return
 
-    input("\n第3步: 准备获取风流场数据。按Enter键继续...")
+    if non_interactive:
+        logger.info("非交互式模式，跳过用户确认")
+        print("\n第3步: 准备获取风流场数据（自动继续）...")
+    else:
+        input("\n第3步: 准备获取风流场数据。按Enter键继续...")
 
     print("\n正在获取风流场数据...")
     print("这可能需要一些时间，请耐心等待...")
@@ -844,12 +881,22 @@ def main():
         traceback.print_exc()
 
     if not success:
+        logger.warning("首次更新失败")
         print("\n首次更新失败，请检查上面的错误信息")
-        response = input("是否继续运行程序? (y/n): ")
-        if response.lower() != 'y':
-            return
 
-    input("\n第4步: 准备设置定时更新。按Enter键继续...")
+        if non_interactive:
+            logger.info("非交互式模式，自动继续执行")
+            print("非交互式模式，自动继续执行...")
+        else:
+            response = input("是否继续运行程序? (y/n): ")
+            if response.lower() != 'y':
+                return
+
+    if non_interactive:
+        logger.info("非交互式模式，跳过用户确认")
+        print("\n第4步: 准备设置定时更新（自动继续）...")
+    else:
+        input("\n第4步: 准备设置定时更新。按Enter键继续...")
 
     # 设置定时任务
     schedule.every(UPDATE_INTERVAL).seconds.do(update_wallpaper)
@@ -863,28 +910,40 @@ def main():
     print("按Ctrl+C可以停止程序")
     print("="*50)
 
-    input("按Enter键开始运行程序...")
+    if non_interactive:
+        logger.info("非交互式模式，自动开始运行程序")
+        print("非交互式模式，自动开始运行程序...")
+    else:
+        input("按Enter键开始运行程序...")
 
     # 主循环
     try:
+        logger.info("开始主循环")
         update_count = 0
         while True:
             schedule.run_pending()
 
             # 每60秒显示一次心跳信息
             if update_count % 60 == 0:
-                print(f"程序正在运行... 下次更新还有 {schedule.idle_seconds():.0f} 秒")
+                idle_seconds = schedule.idle_seconds()
+                logger.debug(f"程序正在运行... 下次更新还有 {idle_seconds:.0f} 秒")
+                print(f"程序正在运行... 下次更新还有 {idle_seconds:.0f} 秒")
 
             update_count += 1
             time.sleep(1)
     except KeyboardInterrupt:
+        logger.info("用户中断程序")
         print("\n程序已停止")
     except Exception as e:
+        logger.error(f"程序异常: {e}")
+        logger.error(traceback.format_exc())
         print(f"\n程序异常: {e}")
-        import traceback
-        traceback.print_exc()
 
-    input("\n按Enter键退出...")
+    if non_interactive:
+        logger.info("非交互式模式，自动退出")
+        print("\n程序已结束")
+    else:
+        input("\n按Enter键退出...")
 
 if __name__ == "__main__":
     main()
