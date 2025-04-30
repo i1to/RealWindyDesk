@@ -8,6 +8,8 @@ import logging
 import traceback
 from datetime import datetime
 import time
+import requests
+import argparse
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel
 from PyQt5.QtCore import Qt, QTimer, QUrl, QSize, QPoint
 from PyQt5.QtGui import QIcon, QFont
@@ -110,15 +112,62 @@ class WindFlowLiveWallpaper(QMainWindow):
             self.status_label.show()
             self.status_timer.start(10000)  # 10秒后隐藏状态标签
 
+            # 测试网络连接
+            try:
+                logger.info(f"测试网络连接到 {WEATHER_URL}")
+                test_response = requests.head(WEATHER_URL, timeout=10)
+                logger.info(f"网络连接测试结果: 状态码 {test_response.status_code}")
+                if test_response.status_code >= 400:
+                    logger.warning(f"网站返回错误状态码: {test_response.status_code}")
+                    self.status_label.setText(f"网站返回错误状态码: {test_response.status_code}，尝试继续加载...")
+            except Exception as net_e:
+                logger.warning(f"网络连接测试失败: {net_e}")
+                self.status_label.setText(f"网络连接测试失败: {net_e}，尝试继续加载...")
+
+            # 配置Web视图
+            logger.info("配置Web视图")
+            settings = self.web_view.settings()
+            settings.setAttribute(QWebEngineSettings.JavascriptEnabled, True)
+            settings.setAttribute(QWebEngineSettings.PluginsEnabled, True)
+            settings.setAttribute(QWebEngineSettings.AutoLoadImages, True)
+            settings.setAttribute(QWebEngineSettings.LocalStorageEnabled, True)
+            settings.setAttribute(QWebEngineSettings.WebGLEnabled, True)
+
+            # 设置用户代理
+            page = self.web_view.page()
+            user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            page.profile().setHttpUserAgent(user_agent)
+            logger.info(f"设置用户代理: {user_agent}")
+
+            # 清除缓存
+            logger.info("清除缓存")
+            page.profile().clearHttpCache()
+
             # 加载中国气象网雷达页面
+            logger.info(f"开始加载URL: {WEATHER_URL}")
             self.web_view.load(QUrl(WEATHER_URL))
 
             # 连接加载完成信号
             self.web_view.loadFinished.connect(self.on_page_loaded)
+
+            # 连接加载进度信号
+            self.web_view.loadProgress.connect(self.on_load_progress)
+
+            # 连接错误信号
+            page.loadStarted.connect(lambda: logger.info("页面开始加载"))
+            page.loadFinished.connect(lambda ok: logger.info(f"页面加载完成: {'成功' if ok else '失败'}"))
+
         except Exception as e:
             logger.error(f"加载页面失败: {e}")
             logger.error(traceback.format_exc())
             self.status_label.setText(f"加载页面失败: {e}")
+
+    def on_load_progress(self, progress):
+        """页面加载进度更新"""
+        logger.debug(f"页面加载进度: {progress}%")
+        if progress % 20 == 0:  # 每20%记录一次
+            logger.info(f"页面加载进度: {progress}%")
+        self.status_label.setText(f"正在加载中国气象网风流场页面... {progress}%")
 
     def on_page_loaded(self, success):
         """页面加载完成后的处理"""
@@ -126,29 +175,119 @@ class WindFlowLiveWallpaper(QMainWindow):
             logger.info("页面加载成功，注入JavaScript代码")
             self.status_label.setText("页面加载成功，正在处理...")
 
+            # 获取页面HTML源码进行调试
+            self.web_view.page().toHtml(self.debug_html)
+
             # 注入JavaScript代码，切换到风流场视图并隐藏不需要的元素
             js_code = """
+            // 调试函数：记录页面信息
+            function logPageInfo() {
+                console.log('页面标题:', document.title);
+                console.log('页面URL:', window.location.href);
+                console.log('页面内容长度:', document.body.innerHTML.length);
+
+                // 记录所有可点击元素
+                var clickableElements = document.querySelectorAll('a, button, li, div[onclick], span[onclick]');
+                console.log('可点击元素数量:', clickableElements.length);
+                for (var i = 0; i < Math.min(clickableElements.length, 20); i++) {
+                    console.log('元素', i, ':', clickableElements[i].tagName, clickableElements[i].textContent.trim());
+                }
+
+                // 记录所有图像元素
+                var images = document.querySelectorAll('img, svg');
+                console.log('图像元素数量:', images.length);
+
+                // 记录所有iframe
+                var iframes = document.querySelectorAll('iframe');
+                console.log('iframe数量:', iframes.length);
+                for (var i = 0; i < iframes.length; i++) {
+                    console.log('iframe', i, ':', iframes[i].src);
+                }
+
+                return {
+                    title: document.title,
+                    url: window.location.href,
+                    contentLength: document.body.innerHTML.length,
+                    clickableElements: clickableElements.length,
+                    images: images.length,
+                    iframes: iframes.length
+                };
+            }
+
             // 函数：查找并点击风流场选项
             function findAndClickWindFlowOption() {
                 console.log('尝试查找风流场选项...');
 
                 // 方法1：查找包含"风流场"文本的元素
                 var elements = document.querySelectorAll('li, a, button, div, span');
+                console.log('找到', elements.length, '个可能的元素');
+
                 for (var i = 0; i < elements.length; i++) {
-                    if (elements[i].textContent.includes('风流场')) {
+                    if (elements[i].textContent && elements[i].textContent.includes('风流场')) {
                         console.log('找到风流场元素:', elements[i].textContent);
-                        elements[i].click();
-                        return true;
+                        try {
+                            elements[i].click();
+                            console.log('已点击风流场元素');
+                            return true;
+                        } catch (e) {
+                            console.error('点击风流场元素失败:', e);
+                            try {
+                                // 尝试使用JavaScript模拟点击
+                                var event = new MouseEvent('click', {
+                                    bubbles: true,
+                                    cancelable: true,
+                                    view: window
+                                });
+                                elements[i].dispatchEvent(event);
+                                console.log('已使用事件模拟点击风流场元素');
+                                return true;
+                            } catch (e2) {
+                                console.error('模拟点击风流场元素失败:', e2);
+                            }
+                        }
                     }
                 }
 
                 // 方法2：查找包含"风"或"流场"的元素
                 for (var i = 0; i < elements.length; i++) {
-                    if (elements[i].textContent.includes('风') || elements[i].textContent.includes('流场')) {
+                    if (elements[i].textContent && (elements[i].textContent.includes('风') || elements[i].textContent.includes('流场'))) {
                         console.log('找到可能的风流场元素:', elements[i].textContent);
-                        elements[i].click();
-                        return true;
+                        try {
+                            elements[i].click();
+                            console.log('已点击可能的风流场元素');
+                            return true;
+                        } catch (e) {
+                            console.error('点击可能的风流场元素失败:', e);
+                            try {
+                                // 尝试使用JavaScript模拟点击
+                                var event = new MouseEvent('click', {
+                                    bubbles: true,
+                                    cancelable: true,
+                                    view: window
+                                });
+                                elements[i].dispatchEvent(event);
+                                console.log('已使用事件模拟点击可能的风流场元素');
+                                return true;
+                            } catch (e2) {
+                                console.error('模拟点击可能的风流场元素失败:', e2);
+                            }
+                        }
                     }
+                }
+
+                // 方法3：尝试直接访问风流场URL
+                try {
+                    // 尝试查找包含风流场的链接
+                    var links = document.querySelectorAll('a');
+                    for (var i = 0; i < links.length; i++) {
+                        if (links[i].href && links[i].href.includes('wind')) {
+                            console.log('找到可能的风流场链接:', links[i].href);
+                            window.location.href = links[i].href;
+                            return true;
+                        }
+                    }
+                } catch (e) {
+                    console.error('尝试访问风流场URL失败:', e);
                 }
 
                 console.log('未找到风流场元素');
@@ -161,12 +300,14 @@ class WindFlowLiveWallpaper(QMainWindow):
 
                 // 隐藏页眉、页脚、菜单等
                 var elementsToHide = document.querySelectorAll('header, footer, nav, .menu, .sidebar, .ad, .logo, .search, .nav');
+                console.log('找到', elementsToHide.length, '个需要隐藏的元素');
                 for (var i = 0; i < elementsToHide.length; i++) {
                     elementsToHide[i].style.display = 'none';
                 }
 
                 // 隐藏所有按钮和输入框
                 var buttons = document.querySelectorAll('button, input, select');
+                console.log('找到', buttons.length, '个按钮和输入框');
                 for (var i = 0; i < buttons.length; i++) {
                     buttons[i].style.display = 'none';
                 }
@@ -176,7 +317,7 @@ class WindFlowLiveWallpaper(QMainWindow):
                                    document.querySelector('div[class*="map"]') ||
                                    document.querySelector('div[id*="map"]');
                 if (mapContainer) {
-                    console.log('找到地图容器');
+                    console.log('找到地图容器:', mapContainer.className || mapContainer.id);
                     mapContainer.style.width = '100vw';
                     mapContainer.style.height = '100vh';
                     mapContainer.style.position = 'fixed';
@@ -193,9 +334,47 @@ class WindFlowLiveWallpaper(QMainWindow):
                     return true;
                 }
 
-                console.log('未找到地图容器');
+                console.log('未找到地图容器，尝试查找其他可能的容器');
+
+                // 尝试查找其他可能的容器
+                var possibleContainers = document.querySelectorAll('div[style*="position: absolute"]');
+                console.log('找到', possibleContainers.length, '个可能的容器');
+                if (possibleContainers.length > 0) {
+                    var largestContainer = possibleContainers[0];
+                    var largestArea = 0;
+
+                    for (var i = 0; i < possibleContainers.length; i++) {
+                        var rect = possibleContainers[i].getBoundingClientRect();
+                        var area = rect.width * rect.height;
+                        if (area > largestArea) {
+                            largestArea = area;
+                            largestContainer = possibleContainers[i];
+                        }
+                    }
+
+                    console.log('使用最大的容器:', largestContainer.className || largestContainer.id);
+                    largestContainer.style.width = '100vw';
+                    largestContainer.style.height = '100vh';
+                    largestContainer.style.position = 'fixed';
+                    largestContainer.style.top = '0';
+                    largestContainer.style.left = '0';
+                    largestContainer.style.zIndex = '1000';
+
+                    // 设置页面背景为黑色
+                    document.body.style.backgroundColor = 'black';
+                    document.body.style.margin = '0';
+                    document.body.style.padding = '0';
+                    document.body.style.overflow = 'hidden';
+
+                    return true;
+                }
+
+                console.log('未找到任何可用的容器');
                 return false;
             }
+
+            // 记录页面信息
+            var pageInfo = logPageInfo();
 
             // 执行操作
             setTimeout(function() {
@@ -206,11 +385,21 @@ class WindFlowLiveWallpaper(QMainWindow):
                 setTimeout(function() {
                     var hideResult = hideUnnecessaryElements();
                     console.log('隐藏元素结果:', hideResult);
+
+                    // 再次记录页面信息
+                    var updatedPageInfo = logPageInfo();
+
+                    return {
+                        clickResult: clickResult,
+                        hideResult: hideResult,
+                        initialPageInfo: pageInfo,
+                        updatedPageInfo: updatedPageInfo
+                    };
                 }, 3000);
             }, 2000);
 
             // 返回成功
-            true;
+            return true;
             """
 
             # 执行JavaScript代码
@@ -219,15 +408,151 @@ class WindFlowLiveWallpaper(QMainWindow):
             logger.error("页面加载失败")
             self.status_label.setText("页面加载失败，请检查网络连接")
 
+            # 尝试获取错误信息
+            self.web_view.page().toHtml(self.debug_html_on_error)
+
+    def debug_html(self, html):
+        """调试用：记录页面HTML源码"""
+        try:
+            # 只记录前1000个字符，避免日志文件过大
+            logger.debug(f"页面HTML源码片段: {html[:1000]}...")
+
+            # 保存完整HTML到文件，方便调试
+            with open("page_source.html", "w", encoding="utf-8") as f:
+                f.write(html)
+            logger.info("已保存完整HTML源码到 page_source.html")
+        except Exception as e:
+            logger.error(f"保存HTML源码失败: {e}")
+
+    def debug_html_on_error(self, html):
+        """页面加载失败时的HTML调试"""
+        try:
+            logger.debug(f"页面加载失败时的HTML源码片段: {html[:1000]}...")
+
+            # 保存完整HTML到文件，方便调试
+            with open("error_page_source.html", "w", encoding="utf-8") as f:
+                f.write(html)
+            logger.info("已保存错误页面的HTML源码到 error_page_source.html")
+
+            # 分析可能的错误原因
+            if "404" in html:
+                logger.error("可能的错误原因: 页面返回404错误")
+                self.status_label.setText("错误: 页面不存在 (404)")
+            elif "403" in html:
+                logger.error("可能的错误原因: 页面返回403错误")
+                self.status_label.setText("错误: 访问被拒绝 (403)")
+            elif "500" in html:
+                logger.error("可能的错误原因: 页面返回500错误")
+                self.status_label.setText("错误: 服务器内部错误 (500)")
+            elif "无法访问此网站" in html or "ERR_CONNECTION" in html:
+                logger.error("可能的错误原因: 网络连接问题")
+                self.status_label.setText("错误: 无法连接到网站，请检查网络")
+            elif len(html) < 100:
+                logger.error("可能的错误原因: 页面内容为空或非常短")
+                self.status_label.setText("错误: 页面内容为空")
+            else:
+                logger.error("未能确定具体错误原因")
+                self.status_label.setText("错误: 页面加载失败，原因未知")
+
     def on_js_executed(self, result):
         """JavaScript代码执行完成后的处理"""
-        if result:
-            logger.info("JavaScript代码执行成功")
-            self.status_label.setText("风流场实时动态壁纸已启动")
-            self.status_timer.start(3000)  # 3秒后隐藏状态标签
-        else:
-            logger.warning("JavaScript代码执行失败")
-            self.status_label.setText("处理页面失败，请按F5刷新")
+        try:
+            if result:
+                logger.info("JavaScript代码执行成功")
+
+                # 如果结果是对象，记录详细信息
+                if isinstance(result, dict):
+                    logger.info("JavaScript返回结果:")
+                    for key, value in result.items():
+                        logger.info(f"  {key}: {value}")
+
+                self.status_label.setText("风流场实时动态壁纸已启动")
+                self.status_timer.start(3000)  # 3秒后隐藏状态标签
+
+                # 5秒后再次检查页面状态
+                QTimer.singleShot(5000, self.check_page_status)
+            else:
+                logger.warning("JavaScript代码执行失败或返回空结果")
+                self.status_label.setText("处理页面失败，请按F5刷新")
+
+                # 尝试重新加载页面
+                QTimer.singleShot(5000, self.refresh_page)
+        except Exception as e:
+            logger.error(f"处理JavaScript执行结果时出错: {e}")
+            logger.error(traceback.format_exc())
+            self.status_label.setText(f"处理JavaScript执行结果时出错: {e}")
+
+    def check_page_status(self):
+        """检查页面状态"""
+        try:
+            # 注入JavaScript代码，检查页面状态
+            js_check = """
+            // 检查页面状态
+            function checkPageStatus() {
+                // 检查是否有地图容器
+                var mapContainer = document.querySelector('.mapContainer') ||
+                                   document.querySelector('div[class*="map"]') ||
+                                   document.querySelector('div[id*="map"]');
+
+                // 检查是否有风流场相关元素
+                var windElements = [];
+                var elements = document.querySelectorAll('*');
+                for (var i = 0; i < elements.length; i++) {
+                    if (elements[i].textContent &&
+                        (elements[i].textContent.includes('风流场') ||
+                         elements[i].textContent.includes('风向') ||
+                         elements[i].textContent.includes('风速'))) {
+                        windElements.push({
+                            tag: elements[i].tagName,
+                            text: elements[i].textContent.trim(),
+                            visible: elements[i].offsetParent !== null
+                        });
+                    }
+                }
+
+                return {
+                    url: window.location.href,
+                    title: document.title,
+                    hasMapContainer: mapContainer !== null,
+                    windElements: windElements.slice(0, 10)  // 只返回前10个元素
+                };
+            }
+
+            return checkPageStatus();
+            """
+
+            self.web_view.page().runJavaScript(js_check, self.on_check_status)
+        except Exception as e:
+            logger.error(f"检查页面状态时出错: {e}")
+            logger.error(traceback.format_exc())
+
+    def on_check_status(self, result):
+        """处理页面状态检查结果"""
+        try:
+            if result:
+                logger.info("页面状态检查结果:")
+                for key, value in result.items():
+                    if key != 'windElements':
+                        logger.info(f"  {key}: {value}")
+                    else:
+                        logger.info(f"  风流场相关元素数量: {len(value)}")
+                        for i, elem in enumerate(value):
+                            logger.info(f"    元素{i+1}: {elem['tag']} - {elem['text']} - 可见: {elem['visible']}")
+
+                # 检查是否成功加载风流场
+                if result.get('hasMapContainer', False):
+                    logger.info("检测到地图容器，页面加载成功")
+                    self.status_label.setText("风流场实时动态壁纸运行中")
+                    self.status_timer.start(3000)  # 3秒后隐藏状态标签
+                else:
+                    logger.warning("未检测到地图容器，可能加载失败")
+                    self.status_label.setText("未检测到风流场地图，请按F5刷新")
+            else:
+                logger.warning("页面状态检查返回空结果")
+                self.status_label.setText("无法检查页面状态，请按F5刷新")
+        except Exception as e:
+            logger.error(f"处理页面状态检查结果时出错: {e}")
+            logger.error(traceback.format_exc())
 
     def hide_status(self):
         """隐藏状态标签"""
@@ -284,23 +609,78 @@ def check_dependencies():
         print("pip install PyQt5 PyQtWebEngine")
         return False
 
+def parse_arguments():
+    """解析命令行参数"""
+    parser = argparse.ArgumentParser(description="中国气象网风流场实时动态壁纸")
+    parser.add_argument("--verbose", action="store_true", help="启用详细日志")
+    parser.add_argument("--url", default=WEATHER_URL, help=f"指定要加载的URL (默认: {WEATHER_URL})")
+    parser.add_argument("--interval", type=int, default=UPDATE_INTERVAL, help=f"刷新间隔（秒）(默认: {UPDATE_INTERVAL})")
+    parser.add_argument("--test", action="store_true", help="测试模式，不设置为桌面背景")
+    return parser.parse_args()
+
 def main():
     """主函数"""
     try:
+        # 解析命令行参数
+        args = parse_arguments()
+
+        # 设置日志级别
+        if args.verbose:
+            logger.setLevel(logging.DEBUG)
+            print("已启用详细日志模式")
+
+        # 更新全局变量
+        global WEATHER_URL, UPDATE_INTERVAL
+        if args.url != WEATHER_URL:
+            WEATHER_URL = args.url
+            print(f"使用自定义URL: {WEATHER_URL}")
+
+        if args.interval != UPDATE_INTERVAL:
+            UPDATE_INTERVAL = args.interval
+            print(f"使用自定义刷新间隔: {UPDATE_INTERVAL}秒")
+
         logger.info("="*50)
         logger.info("启动中国气象网风流场实时动态壁纸")
         logger.info("="*50)
+        logger.info(f"URL: {WEATHER_URL}")
+        logger.info(f"刷新间隔: {UPDATE_INTERVAL}秒")
+        logger.info(f"测试模式: {'是' if args.test else '否'}")
 
         # 检查依赖项
         if not check_dependencies():
+            print("依赖项检查失败，请安装必要的依赖项")
             input("按Enter键退出...")
             return 1
+
+        # 测试网络连接
+        try:
+            logger.info(f"测试网络连接到 {WEATHER_URL}")
+            test_response = requests.head(WEATHER_URL, timeout=10)
+            logger.info(f"网络连接测试结果: 状态码 {test_response.status_code}")
+            if test_response.status_code >= 400:
+                logger.warning(f"网站返回错误状态码: {test_response.status_code}")
+                print(f"警告: 网站返回错误状态码: {test_response.status_code}")
+                response = input("是否继续? (y/n): ")
+                if response.lower() != 'y':
+                    return 1
+        except Exception as e:
+            logger.warning(f"网络连接测试失败: {e}")
+            print(f"警告: 网络连接测试失败: {e}")
+            response = input("是否继续? (y/n): ")
+            if response.lower() != 'y':
+                return 1
 
         # 创建应用程序
         app = QApplication(sys.argv)
 
         # 创建主窗口
         window = WindFlowLiveWallpaper()
+
+        # 如果是测试模式，不设置为桌面背景
+        if args.test:
+            logger.info("测试模式: 不设置为桌面背景")
+            window.setWindowFlags(Qt.Window)  # 使用普通窗口标志
+
         window.show()
 
         # 运行应用程序

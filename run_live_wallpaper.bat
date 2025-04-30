@@ -62,8 +62,24 @@ echo.
 REM 创建必要的目录
 if not exist src\assets mkdir src\assets
 
-REM 运行应用程序
-python src/wind_flow_live_wallpaper.py
+REM 测试网络连接
+echo Testing network connection to www.weather.com.cn...
+ping -n 1 www.weather.com.cn > nul
+if %errorlevel% neq 0 (
+    color 0C
+    echo.
+    echo WARNING: Cannot ping www.weather.com.cn
+    echo The website might be blocked or unreachable from your network.
+    echo The application will still try to connect, but it might fail.
+    echo.
+    set /p continue=Press Enter to continue anyway or Ctrl+C to exit...
+)
+
+REM 运行应用程序（使用详细日志模式）
+echo Running application with detailed logging...
+echo Logs will be saved to wind_flow_live_wallpaper.log
+echo.
+python src/wind_flow_live_wallpaper.py --verbose
 if %errorlevel% neq 0 (
     color 0C
     echo.
