@@ -1,17 +1,27 @@
 import requests
 import json
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 import ctypes
 import os
 import time
 import math
 import schedule
+import re
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import io
+from datetime import datetime
 
 # 配置
-API_KEY = "your_qweather_api_key"  # 替换为你的QWeather API密钥
-LOCATION = "101010100"  # 北京的地点ID，替换为你需要的城市ID
-WALLPAPER_PATH = "wind_wallpaper.png"
-UPDATE_INTERVAL = 600  # 更新间隔（秒），10分钟
+WEATHER_URL = "https://www.weather.com.cn/radar/"  # 中国气象网雷达页面
+WALLPAPER_PATH = "wind_wallpaper.png"  # 壁纸保存路径
+SCREENSHOT_PATH = "wind_screenshot.png"  # 截图保存路径
+UPDATE_INTERVAL = 1800  # 更新间隔（秒），30分钟
+CHROME_DRIVER_PATH = "chromedriver.exe"  # Chrome驱动路径，需要根据实际情况修改
 
 # 获取实时风向数据
 def fetch_wind_data():
@@ -101,4 +111,3 @@ if __name__ == "__main__":
     main()
 
 
-    
