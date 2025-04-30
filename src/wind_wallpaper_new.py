@@ -25,59 +25,182 @@ CHROME_DRIVER_PATH = "chromedriver.exe"  # Chrome驱动路径，需要根据实�
 
 # 获取实时风流场数据（通过截图方式）
 def fetch_wind_data():
+    driver = None
     try:
-        print("启动浏览器...")
+        print("\n步骤1: 启动Chrome浏览器...")
         # 配置Chrome选项
         chrome_options = Options()
         chrome_options.add_argument("--headless")  # 无头模式
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--window-size=1920,1080")
         chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")  # 解决内存不足问题
+        chrome_options.add_argument("--disable-extensions")  # 禁用扩展
+        chrome_options.add_argument("--disable-browser-side-navigation")  # 避免超时错误
+        chrome_options.add_argument("--disable-features=VizDisplayCompositor")  # 避免渲染问题
 
         # 创建Chrome浏览器实例
+        print(f"使用驱动: {os.path.abspath(CHROME_DRIVER_PATH)}")
         service = Service(CHROME_DRIVER_PATH)
         driver = webdriver.Chrome(service=service, options=chrome_options)
+        print("✓ Chrome浏览器已启动")
 
         # 访问中国气象网雷达页面
-        print(f"访问 {WEATHER_URL}...")
+        print(f"\n步骤2: 访问中国气象网 {WEATHER_URL}...")
         driver.get(WEATHER_URL)
+        print("✓ 页面已加载")
 
         # 等待页面加载完成
-        WebDriverWait(driver, 20).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, ".mapContainer"))
-        )
+        print("\n步骤3: 等待页面元素加载...")
+        try:
+            WebDriverWait(driver, 30).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, ".mapContainer"))
+            )
+            print("✓ 地图容器已加载")
+        except Exception as e:
+            print(f"✗ 等待地图容器超时: {e}")
+            print("尝试查找页面上的其他元素...")
+
+            # 打印页面源码，帮助调试
+            print("\n页面源码片段:")
+            page_source = driver.page_source
+            print(page_source[:500] + "..." if len(page_source) > 500 else page_source)
+
+            # 尝试查找其他可能的元素
+            try:
+                body = driver.find_element(By.TAG_NAME, "body")
+                print(f"找到body元素，内容长度: {len(body.text)}")
+
+                # 尝试查找所有可能的地图容器
+                containers = driver.find_elements(By.CSS_SELECTOR, "div[class*='map'], div[id*='map']")
+                if containers:
+                    print(f"找到 {len(containers)} 个可能的地图容器")
+                    map_element = containers[0]  # 使用第一个找到的容器
+                else:
+                    raise Exception("找不到任何地图容器")
+            except Exception as inner_e:
+                print(f"✗ 查找替代元素失败: {inner_e}")
+                raise Exception("无法加载页面元素，请检查网站结构是否已更改")
 
         # 点击风流场选项
-        print("切换到风流场视图...")
-        wind_option = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, "//li[contains(text(), '风流场')]"))
-        )
-        wind_option.click()
+        print("\n步骤4: 切换到风流场视图...")
+        try:
+            # 首先尝试使用XPath查找
+            wind_options = driver.find_elements(By.XPATH, "//li[contains(text(), '风流场')]")
+
+            if wind_options:
+                wind_option = wind_options[0]
+                print(f"✓ 找到风流场选项: {wind_option.text}")
+            else:
+                # 如果找不到，尝试其他方法
+                print("使用备用方法查找风流场选项...")
+
+                # 尝试查找所有列表项
+                all_options = driver.find_elements(By.TAG_NAME, "li")
+                wind_option = None
+
+                for option in all_options:
+                    if '风' in option.text or '流场' in option.text:
+                        wind_option = option
+                        print(f"✓ 找到可能的风流场选项: {option.text}")
+                        break
+
+                if not wind_option:
+                    # 如果仍然找不到，尝试点击可能的按钮或链接
+                    buttons = driver.find_elements(By.TAG_NAME, "button")
+                    links = driver.find_elements(By.TAG_NAME, "a")
+
+                    for element in buttons + links:
+                        if '风' in element.text or '流场' in element.text:
+                            wind_option = element
+                            print(f"✓ 找到可能的风流场按钮/链接: {element.text}")
+                            break
+
+                if not wind_option:
+                    raise Exception("找不到风流场选项")
+
+            # 点击风流场选项
+            print("点击风流场选项...")
+            driver.execute_script("arguments[0].scrollIntoView(true);", wind_option)
+            driver.execute_script("arguments[0].click();", wind_option)
+            print("✓ 已点击风流场选项")
+
+        except Exception as e:
+            print(f"✗ 切换到风流场视图失败: {e}")
+            print("尝试直接查找地图元素...")
 
         # 等待风流场数据加载
-        time.sleep(5)
+        print("\n步骤5: 等待风流场数据加载...")
+        time.sleep(10)  # 增加等待时间，确保数据完全加载
+        print("✓ 等待完成")
 
         # 获取当前时间作为风向数据的时间戳
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+        print(f"当前时间: {current_time}")
 
         # 截取风流场图
-        print("截取风流场图...")
-        map_element = driver.find_element(By.CSS_SELECTOR, ".mapContainer")
-        screenshot = map_element.screenshot_as_png
+        print("\n步骤6: 截取风流场图...")
+        try:
+            # 尝试找到地图容器
+            map_elements = driver.find_elements(By.CSS_SELECTOR, ".mapContainer")
+            if map_elements:
+                map_element = map_elements[0]
+                print("✓ 找到地图容器")
+            else:
+                # 尝试查找其他可能的地图容器
+                map_elements = driver.find_elements(By.CSS_SELECTOR, "div[class*='map'], div[id*='map']")
+                if map_elements:
+                    map_element = map_elements[0]
+                    print(f"✓ 找到备用地图容器: {map_element.get_attribute('class')}")
+                else:
+                    # 如果找不到任何地图容器，截取整个页面
+                    print("找不到地图容器，将截取整个页面")
+                    map_element = driver.find_element(By.TAG_NAME, "body")
 
-        # 保存截图
-        with open(SCREENSHOT_PATH, "wb") as file:
-            file.write(screenshot)
+            # 截取元素
+            print("正在截取...")
+            screenshot = map_element.screenshot_as_png
+            print("✓ 截图已获取")
 
-        print(f"风流场截图已保存到 {SCREENSHOT_PATH}")
+            # 保存截图
+            with open(SCREENSHOT_PATH, "wb") as file:
+                file.write(screenshot)
+
+            print(f"✓ 风流场截图已保存到: {os.path.abspath(SCREENSHOT_PATH)}")
+
+        except Exception as e:
+            print(f"✗ 截取风流场图失败: {e}")
+            print("尝试截取整个页面...")
+
+            try:
+                # 截取整个页面
+                screenshot = driver.get_screenshot_as_png()
+
+                # 保存截图
+                with open(SCREENSHOT_PATH, "wb") as file:
+                    file.write(screenshot)
+
+                print(f"✓ 整页截图已保存到: {os.path.abspath(SCREENSHOT_PATH)}")
+            except Exception as e2:
+                print(f"✗ 截取整个页面也失败了: {e2}")
+                raise Exception("无法获取任何截图")
+
+        print("\n步骤7: 关闭浏览器...")
         driver.quit()
+        print("✓ 浏览器已关闭")
 
         # 返回时间戳（作为风向描述）和截图路径
         return current_time, SCREENSHOT_PATH, None
     except Exception as e:
-        print(f"获取风流场数据失败: {e}")
-        if 'driver' in locals():
-            driver.quit()
+        print(f"\n✗ 获取风流场数据失败: {e}")
+        import traceback
+        traceback.print_exc()
+        if driver:
+            try:
+                driver.quit()
+                print("浏览器已关闭")
+            except:
+                print("关闭浏览器时出错")
         return None, None, None
 
 # 创建风流场壁纸
@@ -237,7 +360,10 @@ def main():
     print(f"工作目录: {os.getcwd()}")
     print("-"*50)
 
+    input("第1步: 准备开始检查环境。按Enter键继续...")
+
     # 检查Chrome驱动是否存在
+    print("\n正在检查Chrome驱动...")
     if not os.path.exists(CHROME_DRIVER_PATH):
         print(f"错误: Chrome驱动文件不存在: {CHROME_DRIVER_PATH}")
         print("请下载适合您Chrome版本的驱动并放置在正确位置")
@@ -245,91 +371,223 @@ def main():
         input("按Enter键退出...")
         return
 
-    print(f"Chrome驱动路径: {os.path.abspath(CHROME_DRIVER_PATH)}")
+    print(f"✓ Chrome驱动已找到: {os.path.abspath(CHROME_DRIVER_PATH)}")
+
+    # 检查Chrome浏览器
+    print("\n正在检查Chrome浏览器...")
+    chrome_found = False
+    possible_chrome_paths = [
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        os.path.expanduser("~") + r"\AppData\Local\Google\Chrome\Application\chrome.exe"
+    ]
+
+    for path in possible_chrome_paths:
+        if os.path.exists(path):
+            print(f"✓ Chrome浏览器已找到: {path}")
+            chrome_found = True
+            break
+
+    if not chrome_found:
+        print("警告: 未找到Chrome浏览器，程序可能无法正常运行")
+        print("请确保已安装Chrome浏览器")
+        response = input("是否继续? (y/n): ")
+        if response.lower() != 'y':
+            return
+
+    input("\n第2步: 准备测试壁纸设置功能。按Enter键继续...")
 
     # 检查是否能够设置壁纸
+    print("\n正在测试壁纸设置功能...")
     try:
         # 创建一个简单的测试图像
-        test_img = Image.new("RGB", (100, 100), "white")
+        print("创建测试图像...")
+        test_img = Image.new("RGB", (100, 100), "blue")
         test_path = "test_wallpaper.bmp"
         test_img.save(test_path)
+        print(f"✓ 测试图像已创建: {os.path.abspath(test_path)}")
 
         # 尝试设置测试壁纸
-        print("测试壁纸设置功能...")
+        print("\n尝试设置测试壁纸...")
         old_wallpaper_path = WALLPAPER_PATH
         global WALLPAPER_PATH
         WALLPAPER_PATH = test_path
 
+        wallpaper_set = False
+
+        # 方法1
+        print("\n尝试方法1: 使用SystemParametersInfoW...")
         if set_wallpaper():
-            print("壁纸设置测试成功!")
+            print("✓ 壁纸设置测试成功!")
+            wallpaper_set = True
         else:
-            print("警告: 壁纸设置测试失败，程序可能无法设置壁纸")
-            print("请确保程序有足够的权限，或以管理员身份运行")
-            response = input("是否继续运行程序? (y/n): ")
-            if response.lower() != 'y':
-                return
+            print("✗ 方法1失败")
+
+            # 如果方法1失败，尝试直接调用API
+            print("\n尝试方法2: 直接调用Windows API...")
+            try:
+                SPI_SETDESKWALLPAPER = 0x0014
+                SPIF_UPDATEINIFILE = 0x01
+                SPIF_SENDCHANGE = 0x02
+                abs_path = os.path.abspath(test_path)
+                result = ctypes.windll.user32.SystemParametersInfoW(
+                    SPI_SETDESKWALLPAPER,
+                    0,
+                    abs_path,
+                    SPIF_UPDATEINIFILE | SPIF_SENDCHANGE
+                )
+                if result:
+                    print("✓ 方法2成功!")
+                    wallpaper_set = True
+                else:
+                    print(f"✗ 方法2失败: 返回值 {result}")
+            except Exception as e:
+                print(f"✗ 方法2异常: {e}")
+
+            # 如果方法2也失败，尝试使用注册表
+            if not wallpaper_set:
+                print("\n尝试方法3: 使用注册表...")
+                try:
+                    import winreg
+                    abs_path = os.path.abspath(test_path)
+                    registry_key = winreg.OpenKey(
+                        winreg.HKEY_CURRENT_USER,
+                        "Control Panel\\Desktop",
+                        0,
+                        winreg.KEY_SET_VALUE
+                    )
+                    winreg.SetValueEx(registry_key, "WallpaperStyle", 0, winreg.REG_SZ, "0")
+                    winreg.SetValueEx(registry_key, "TileWallpaper", 0, winreg.REG_SZ, "0")
+                    winreg.SetValueEx(registry_key, "Wallpaper", 0, winreg.REG_SZ, abs_path)
+                    winreg.CloseKey(registry_key)
+
+                    # 通知Windows更新设置
+                    ctypes.windll.user32.SendMessageW(0xFFFF, 0x0112, 0xF, 0)
+                    ctypes.windll.user32.SendMessageW(0xFFFF, 0x0112, 0xF, 0)
+
+                    print("✓ 方法3成功!")
+                    wallpaper_set = True
+                except Exception as e:
+                    print(f"✗ 方法3异常: {e}")
 
         # 恢复原始路径
         WALLPAPER_PATH = old_wallpaper_path
 
+        # 询问用户壁纸是否已更改
+        response = input("\n您的桌面壁纸是否变成了蓝色? (y/n): ")
+        if response.lower() == 'y':
+            print("✓ 壁纸设置测试成功!")
+            wallpaper_set = True
+        else:
+            print("✗ 壁纸设置测试失败")
+            wallpaper_set = False
+
         # 清理测试文件
         try:
             os.remove(test_path)
-        except:
-            pass
+            print(f"✓ 测试图像已删除: {test_path}")
+        except Exception as e:
+            print(f"警告: 无法删除测试图像: {e}")
+
+        if not wallpaper_set:
+            print("\n警告: 所有壁纸设置方法都失败了")
+            print("可能的原因:")
+            print("1. 程序没有足够的权限")
+            print("2. 系统策略限制了壁纸更改")
+            print("3. Windows版本不兼容")
+            print("\n建议:")
+            print("- 以管理员身份运行程序")
+            print("- 检查系统策略设置")
+            print("- 尝试手动更改壁纸以确认权限")
+
+            response = input("\n是否继续运行程序? (y/n): ")
+            if response.lower() != 'y':
+                return
     except Exception as e:
-        print(f"壁纸设置测试失败: {e}")
-        response = input("是否继续运行程序? (y/n): ")
+        print(f"\n壁纸设置测试失败: {e}")
+        import traceback
+        traceback.print_exc()
+        response = input("\n是否继续运行程序? (y/n): ")
         if response.lower() != 'y':
             return
 
-    print("-"*50)
-    print("开始获取风流场数据...")
+    input("\n第3步: 准备获取风流场数据。按Enter键继续...")
+
+    print("\n正在获取风流场数据...")
+    print("这可能需要一些时间，请耐心等待...")
 
     # 首次运行
     success = False
     try:
         # 尝试更新壁纸
-        update_wallpaper()
+        timestamp, screenshot_path, _ = fetch_wind_data()
 
-        # 检查壁纸文件是否已创建
-        if os.path.exists(WALLPAPER_PATH):
-            print("首次更新成功!")
-            success = True
+        if timestamp and screenshot_path:
+            print(f"\n✓ 风流场数据获取成功!")
+            print(f"时间戳: {timestamp}")
+            print(f"截图路径: {screenshot_path}")
+
+            print("\n正在创建壁纸...")
+            if create_wind_wallpaper(timestamp, screenshot_path, None):
+                print(f"\n✓ 壁纸创建成功: {WALLPAPER_PATH}")
+
+                print("\n正在设置壁纸...")
+                if set_wallpaper():
+                    print("\n✓ 壁纸设置成功!")
+                    success = True
+                else:
+                    print("\n✗ 壁纸设置失败")
+            else:
+                print("\n✗ 壁纸创建失败")
         else:
-            print("首次更新未能创建壁纸文件")
+            print("\n✗ 风流场数据获取失败")
     except Exception as e:
-        print(f"首次更新失败: {e}")
+        print(f"\n首次更新失败: {e}")
         import traceback
         traceback.print_exc()
 
     if not success:
-        print("首次更新失败，请检查错误信息")
+        print("\n首次更新失败，请检查上面的错误信息")
         response = input("是否继续运行程序? (y/n): ")
         if response.lower() != 'y':
             return
 
+    input("\n第4步: 准备设置定时更新。按Enter键继续...")
+
     # 设置定时任务
     schedule.every(UPDATE_INTERVAL).seconds.do(update_wallpaper)
-    print(f"已设置每 {UPDATE_INTERVAL} 秒更新一次壁纸")
+    print(f"\n✓ 已设置每 {UPDATE_INTERVAL} 秒更新一次壁纸")
 
-    print("-"*50)
+    print("\n="*50)
+    print("程序设置完成!")
+    print("="*50)
     print("程序现在将在后台运行")
+    print("每次更新都会在控制台显示进度")
     print("按Ctrl+C可以停止程序")
-    print("-"*50)
+    print("="*50)
+
+    input("按Enter键开始运行程序...")
 
     # 主循环
     try:
+        update_count = 0
         while True:
             schedule.run_pending()
+
+            # 每60秒显示一次心跳信息
+            if update_count % 60 == 0:
+                print(f"程序正在运行... 下次更新还有 {schedule.idle_seconds():.0f} 秒")
+
+            update_count += 1
             time.sleep(1)
     except KeyboardInterrupt:
         print("\n程序已停止")
     except Exception as e:
-        print(f"程序异常: {e}")
+        print(f"\n程序异常: {e}")
         import traceback
         traceback.print_exc()
-        input("按Enter键退出...")
+
+    input("\n按Enter键退出...")
 
 if __name__ == "__main__":
     main()
