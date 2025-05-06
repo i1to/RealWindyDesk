@@ -1,6 +1,6 @@
 """
-中国气象网风流场实时动态壁纸
-将中国气象网的风流场页面直接嵌入到桌面背景中
+Real-time Wind Flow Visualization Desktop Wallpaper
+Embeds the Earth Nullschool wind flow visualization directly into the desktop background
 """
 import sys
 import os
@@ -15,10 +15,10 @@ from PyQt5.QtCore import Qt, QTimer, QUrl, QSize, QPoint
 from PyQt5.QtGui import QIcon, QFont
 from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineSettings, QWebEngineProfile
 
-# 配置
+# Configuration
 LOG_FILE = "wind_flow_live_wallpaper.log"
-WEATHER_URL = "https://www.weather.com.cn/radar/"  # 中国气象网雷达页面
-UPDATE_INTERVAL = 3600  # 刷新间隔（秒），1小时
+WEATHER_URL = "https://earth.nullschool.net/zh-cn/#current/wind/surface/level/patterson=0.00,0.00,185"  # Earth Nullschool wind visualization
+UPDATE_INTERVAL = 3600  # Refresh interval (seconds), 1 hour
 
 # 创建日志记录器
 logging.basicConfig(
@@ -37,9 +37,9 @@ class WindFlowLiveWallpaper(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        # 设置窗口属性
-        self.setWindowTitle("中国气象网风流场实时动态壁纸")
-        # 只有当图标文件存在时才设置窗口图标
+        # Set window properties
+        self.setWindowTitle("Earth Nullschool Wind Flow Live Wallpaper")
+        # Only set the window icon if the icon file exists
         icon_path = os.path.join(os.path.dirname(__file__), "assets", "icon.png")
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
@@ -81,8 +81,8 @@ class WindFlowLiveWallpaper(QMainWindow):
         # 添加Web视图到布局
         self.layout.addWidget(self.web_view)
 
-        # 创建状态标签
-        self.status_label = QLabel("正在加载中国气象网风流场页面...")
+        # Create status label
+        self.status_label = QLabel("Loading Earth Nullschool wind visualization...")
         self.status_label.setAlignment(Qt.AlignCenter)
         self.status_label.setFont(QFont("Arial", 12))
         self.status_label.setStyleSheet("background-color: rgba(0, 0, 0, 150); color: white; padding: 10px;")
@@ -105,12 +105,12 @@ class WindFlowLiveWallpaper(QMainWindow):
         logger.info("风流场实时动态壁纸已启动")
 
     def load_wind_flow_page(self):
-        """加载中国气象网风流场页面"""
+        """Load Earth Nullschool wind visualization page"""
         try:
-            logger.info("加载中国气象网风流场页面")
-            self.status_label.setText("正在加载中国气象网风流场页面...")
+            logger.info("Loading Earth Nullschool wind visualization page")
+            self.status_label.setText("Loading Earth Nullschool wind visualization...")
             self.status_label.show()
-            self.status_timer.start(10000)  # 10秒后隐藏状态标签
+            self.status_timer.start(10000)  # Hide status label after 10 seconds
 
             # 测试网络连接
             try:
@@ -163,17 +163,17 @@ class WindFlowLiveWallpaper(QMainWindow):
             self.status_label.setText(f"加载页面失败: {e}")
 
     def on_load_progress(self, progress):
-        """页面加载进度更新"""
-        logger.debug(f"页面加载进度: {progress}%")
-        if progress % 20 == 0:  # 每20%记录一次
-            logger.info(f"页面加载进度: {progress}%")
-        self.status_label.setText(f"正在加载中国气象网风流场页面... {progress}%")
+        """Page loading progress update"""
+        logger.debug(f"Page loading progress: {progress}%")
+        if progress % 20 == 0:  # Log every 20%
+            logger.info(f"Page loading progress: {progress}%")
+        self.status_label.setText(f"Loading Earth Nullschool wind visualization... {progress}%")
 
     def on_page_loaded(self, success):
-        """页面加载完成后的处理"""
+        """Process after page loading is complete"""
         if success:
-            logger.info("页面加载成功，注入JavaScript代码")
-            self.status_label.setText("页面加载成功，正在处理...")
+            logger.info("Page loaded successfully, injecting JavaScript code")
+            self.status_label.setText("Page loaded successfully, processing...")
 
             # 获取页面HTML源码进行调试
             self.web_view.page().toHtml(self.debug_html)
@@ -518,8 +518,8 @@ class WindFlowLiveWallpaper(QMainWindow):
                     for key, value in result.items():
                         logger.info(f"  {key}: {value}")
 
-                self.status_label.setText("风流场实时动态壁纸已启动")
-                self.status_timer.start(3000)  # 3秒后隐藏状态标签
+                self.status_label.setText("Wind Flow Live Wallpaper is running")
+                self.status_timer.start(3000)  # Hide status label after 3 seconds
 
                 # 5秒后再次检查页面状态
                 QTimer.singleShot(5000, self.check_page_status)
@@ -594,14 +594,14 @@ class WindFlowLiveWallpaper(QMainWindow):
                         for i, elem in enumerate(value):
                             logger.info(f"    元素{i+1}: {elem['tag']} - {elem['text']} - 可见: {elem['visible']}")
 
-                # 检查是否成功加载风流场
+                # Check if wind flow visualization loaded successfully
                 if result.get('hasMapContainer', False):
-                    logger.info("检测到地图容器，页面加载成功")
-                    self.status_label.setText("风流场实时动态壁纸运行中")
-                    self.status_timer.start(3000)  # 3秒后隐藏状态标签
+                    logger.info("Map container detected, page loaded successfully")
+                    self.status_label.setText("Wind Flow Live Wallpaper is running")
+                    self.status_timer.start(3000)  # Hide status label after 3 seconds
                 else:
-                    logger.warning("未检测到地图容器，可能加载失败")
-                    self.status_label.setText("未检测到风流场地图，请按F5刷新")
+                    logger.warning("No map container detected, loading may have failed")
+                    self.status_label.setText("Wind flow map not detected, press F5 to refresh")
             else:
                 logger.warning("页面状态检查返回空结果")
                 self.status_label.setText("无法检查页面状态，请按F5刷新")

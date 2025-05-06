@@ -1,14 +1,14 @@
 @echo off
 chcp 65001 > nul
-title China Weather Wind Flow Live Wallpaper
+title Earth Nullschool Wind Flow Live Wallpaper
 color 0A
 
 echo =====================================================
-echo  China Weather Wind Flow Live Wallpaper
+echo  Earth Nullschool Wind Flow Live Wallpaper
 echo =====================================================
 echo.
 echo This application will display the real-time wind flow map
-echo from China Weather website as your desktop background.
+echo from Earth Nullschool website as your desktop background.
 echo.
 echo Controls:
 echo - ESC: Exit the application
@@ -62,13 +62,13 @@ echo.
 REM 创建必要的目录
 if not exist src\assets mkdir src\assets
 
-REM 测试网络连接
-echo Testing network connection to www.weather.com.cn...
-ping -n 1 www.weather.com.cn > nul
+REM Test network connection
+echo Testing network connection to earth.nullschool.net...
+ping -n 1 earth.nullschool.net > nul
 if %errorlevel% neq 0 (
     color 0C
     echo.
-    echo WARNING: Cannot ping www.weather.com.cn
+    echo WARNING: Cannot ping earth.nullschool.net
     echo The website might be blocked or unreachable from your network.
     echo The application will still try to connect, but it might fail.
     echo.

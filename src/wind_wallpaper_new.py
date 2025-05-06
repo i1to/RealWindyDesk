@@ -58,12 +58,12 @@ def log_uncaught_exceptions(exc_type, exc_value, exc_traceback):
 # 设置全局异常处理器
 sys.excepthook = log_uncaught_exceptions
 
-# 配置
-WEATHER_URL = "https://www.weather.com.cn/radar/"  # 中国气象网雷达页面
-WALLPAPER_PATH = "wind_wallpaper.png"  # 壁纸保存路径
-SCREENSHOT_PATH = "wind_screenshot.png"  # 截图保存路径
-UPDATE_INTERVAL = 1800  # 更新间隔（秒），30分钟
-CHROME_DRIVER_PATH = "chromedriver.exe"  # Chrome驱动路径，需要根据实际情况修改
+# Configuration
+WEATHER_URL = "https://earth.nullschool.net/zh-cn/#current/wind/surface/level/patterson=0.00,0.00,185"  # Earth Nullschool wind visualization
+WALLPAPER_PATH = "wind_wallpaper.png"  # Wallpaper save path
+SCREENSHOT_PATH = "wind_screenshot.png"  # Screenshot save path
+UPDATE_INTERVAL = 1800  # Update interval (seconds), 30 minutes
+CHROME_DRIVER_PATH = "chromedriver.exe"  # Chrome driver path, modify according to actual situation
 
 # 获取实时风流场数据（通过截图方式）
 def fetch_wind_data():
@@ -425,9 +425,9 @@ def create_wind_wallpaper(timestamp, screenshot_path, _):
         logger.debug(f"添加时间戳: {timestamp_text}")
         draw.text((20, 20), timestamp_text, fill="black", font=font)
 
-        # 添加数据来源
-        source_text = "数据来源: 中国气象网 (www.weather.com.cn)"
-        logger.debug(f"添加数据来源: {source_text}")
+        # Add data source
+        source_text = "Data Source: Earth Nullschool (earth.nullschool.net)"
+        logger.debug(f"Adding data source: {source_text}")
         draw.text((20, 50), source_text, fill="black", font=font)
 
         # 确保目录存在

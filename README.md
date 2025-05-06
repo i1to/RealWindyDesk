@@ -1,65 +1,65 @@
-# 中国气象网风流场实时动态壁纸
+# Real-time Wind Flow Visualization Desktop Wallpaper
 
-将中国气象网的实时风流场数据显示为桌面背景，让您随时了解风向和风速情况。
+Display real-time wind flow data as your desktop background, allowing you to monitor wind direction and speed at any time.
 
-## 项目状态
+## Project Status
 
-✅ **已实现**: 本项目已经实现了将中国气象网的实时风流场数据显示为桌面背景的功能。程序会自动加载中国气象网的风流场页面，并将其显示为桌面背景，定期刷新以保持数据的实时性。
+✅ **Implemented**: This project has successfully implemented the functionality to display real-time wind flow data as a desktop background. The program automatically loads the wind flow page from Earth Nullschool, displays it as a desktop background, and refreshes periodically to maintain data accuracy.
 
-## 项目概述
+## Project Overview
 
-本项目创建了一个动态桌面背景，实时显示中国气象网的风流场数据。程序使用 PyQt5 的 WebEngine 直接加载中国气象网的风流场页面，保留了所有动画和交互效果，让您可以直观地了解全国各地的风向和风速情况。
+This project creates a dynamic desktop background that displays real-time wind flow data. The program uses PyQt5's WebEngine to directly load the Earth Nullschool wind visualization page, preserving all animations and interactive effects, allowing you to intuitively understand wind direction and speed across the globe.
 
-### 功能特点
+### Features
 
-- **实时数据**: 直接从中国气象网获取最新的风流场数据
-- **动态显示**: 保留原网页的动画效果，实时显示风向和风速变化
-- **自动更新**: 定期刷新页面，确保数据始终保持最新
-- **无缝集成**: 作为桌面背景显示，不影响桌面图标和其他应用程序
-- **简单控制**: 使用键盘快捷键控制程序（ESC退出，F5刷新，F1显示/隐藏状态）
+- **Real-time Data**: Fetches the latest wind flow data directly from Earth Nullschool
+- **Dynamic Display**: Preserves the original webpage's animation effects, showing real-time changes in wind direction and speed
+- **Automatic Updates**: Refreshes the page periodically to ensure data is always up-to-date
+- **Seamless Integration**: Displays as a desktop background without affecting desktop icons and other applications
+- **Simple Controls**: Uses keyboard shortcuts to control the program (ESC to exit, F5 to refresh, F1 to show/hide status)
 
-### 技术实现
+### Technical Implementation
 
-本项目使用以下技术实现：
+This project is implemented using the following technologies:
 
-- **PyQt5**: 创建桌面应用程序
-- **PyQtWebEngine**: 加载和显示网页内容
-- **JavaScript**: 自动处理网页，点击风流场选项并隐藏不需要的元素
-- **Python**: 实现程序逻辑和控制流程
+- **PyQt5**: Creates the desktop application
+- **PyQtWebEngine**: Loads and displays web content
+- **JavaScript**: Automatically processes the webpage, selects wind flow options and hides unnecessary elements
+- **Python**: Implements program logic and control flow
 
-## 使用方法
+## Usage
 
-1. 运行 `run_live_wallpaper.bat` 批处理文件
-2. 程序会自动安装必要的依赖项（PyQt5、PyQtWebEngine）
-3. 程序启动后，会自动加载中国气象网的风流场页面
-4. 页面加载完成后，程序会自动点击风流场选项，并隐藏不需要的元素
-5. 程序会定期刷新页面，确保显示最新的数据
+1. Run the `run_live_wallpaper.bat` batch file
+2. The program will automatically install necessary dependencies (PyQt5, PyQtWebEngine)
+3. After startup, the program will automatically load the Earth Nullschool wind flow page
+4. Once the page is loaded, the program will automatically select the wind flow option and hide unnecessary elements
+5. The program will refresh the page periodically to ensure the latest data is displayed
 
-### 控制方式
+### Controls
 
-- 按 `ESC` 键退出程序
-- 按 `F5` 键刷新页面
-- 按 `F1` 键显示/隐藏状态标签
+- Press `ESC` to exit the program
+- Press `F5` to refresh the page
+- Press `F1` to show/hide the status label
 
-## 系统要求
+## System Requirements
 
 - Windows 10/11
 - Python 3.6+
-- 网络连接（用于访问中国气象网）
+- Internet connection (to access Earth Nullschool)
 
-## 文件结构
+## File Structure
 
-- `run_live_wallpaper.bat`: 主运行文件，用于启动程序
-- `src/wind_flow_live_wallpaper.py`: 主程序文件，实现了风流场实时动态壁纸的功能
-- `src/assets/icon.png`: 程序图标
-- `src/scripts/`: 包含其他辅助脚本和批处理文件
+- `run_live_wallpaper.bat`: Main run file to start the program
+- `src/wind_flow_live_wallpaper.py`: Main program file that implements the wind flow live wallpaper functionality
+- `src/assets/icon.png`: Program icon
+- `src/scripts/`: Contains other auxiliary scripts and batch files
 
-## 注意事项
+## Notes
 
-- 程序需要连接到中国气象网才能获取实时数据
-- 首次加载可能需要一些时间，请耐心等待
-- 如果遇到问题，可以查看 `wind_flow_live_wallpaper.log` 文件了解详细信息
+- The program requires an internet connection to fetch real-time data
+- Initial loading may take some time, please be patient
+- If you encounter any issues, check the `wind_flow_live_wallpaper.log` file for detailed information
 
-## 许可证
+## License
 
-本项目采用 MIT 许可证。
+This project is licensed under the MIT License.
